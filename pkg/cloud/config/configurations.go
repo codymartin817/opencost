@@ -1,10 +1,10 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/opencost/opencost/core/pkg/log"
+	"github.com/opencost/opencost/core/pkg/util/json"
 	"github.com/opencost/opencost/pkg/cloud"
 	"github.com/opencost/opencost/pkg/cloud/alibaba"
 	"github.com/opencost/opencost/pkg/cloud/aws"
@@ -77,7 +77,11 @@ func (c *Configurations) UnmarshalJSON(bytes []byte) error {
 	// This has been tested for backwards compatability, and it works in both config formats.
 	// It also coincidentally works if you mix-and-match both the old format and the new
 	// format.
-	// Create defined type to gain access to default Unmarshalling, then convert to pointer
+	// Create defined type to gain access to default Unmarshalling, then convert to pointer.
+	// Must use this package's jsoniter-backed Unmarshal here: stdlib encoding/json (on Go
+	// toolchains where it delegates to encoding/json/v2 internally) fails to strip the
+	// UnmarshalJSON method from confUnmarshaller and calls back into this method forever,
+	// stack-overflowing (#4029).
 	type confUnmarshaller Configurations
 	err := json.Unmarshal(bytes, (*confUnmarshaller)(c))
 	// If unmarshal is successful, return
